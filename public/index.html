@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNIPER IHSG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <pre class="ascii-art">
+░██████╗███╗░░██╗██╗██████╗░███████╗██████╗░  ██╗██╗░░██╗░██████╗░██████╗░
+██╔════╝████╗░██║██║██╔══██╗██╔════╝██╔══██╗  ██║██║░░██║██╔════╝██╔════╝░
+╚█████╗░██╔██╗██║██║██████╔╝█████╗░░██████╔╝  ██║███████║╚█████╗░██║░░██╗░
+░╚═══██╗██║╚████║██║██╔═══╝░██╔══╝░░██╔══██╗  ██║██╔══██║░╚═══██╗██║░░╚██╗
+██████╔╝██║░╚███║██║██║░░░░░███████╗██║░░██║  ██║██║░░██║██████╔╝╚██████╔╝
+╚═════╝░╚═╝░░╚══╝╚═╝╚═╝░░░░░╚══════╝╚═╝░░╚═╝  ╚═╝╚═╝░░╚═╝╚═════╝░░╚═════╝░
+  IDX SCALPING SNIPER • by Fattan Malva • v4.1
+            </pre>
+            <div class="timestamp">⏳ <span id="currentTime"></span> | Happy Cuan</div>
+            <div class="warning">
+                ⚠️ Stock trading is risk. This analysis is not a profit guarantee.
+            </div>
+        </header>
+
+        <nav class="menu">
+            <button class="menu-btn active" onclick="showSection('screening')">Momentum Scalping</button>
+            <button class="menu-btn" onclick="showSection('analisa')">Analysis of Specific Stocks</button>
+            <button class="menu-btn" onclick="showSection('warrant')">Warrant Screening</button>
+        </nav>
+
+        <main>
+            <section id="screening" class="section active">
+                <h2>Momentum Scalping</h2>
+                <button class="action-btn" onclick="loadScreening()">Start Screening</button>
+                <div id="screening-results" class="results">
+                    <div class="loading">Click the button above to start screening...</div>
+                </div>
+            </section>
+
+            <section id="analisa" class="section">
+                <h2>Analysis of Specific Stocks</h2>
+                <div class="input-group">
+                    <input type="text" id="symbol-input" placeholder="Enter Stock Code/Name (Example: BBCA)"
+                        class="symbol-input">
+                    <button class="action-btn" onclick="analisaSaham()">Analyze</button>
+                </div>
+                <div id="analisa-results" class="results">
+                    <div class="loading">Enter the stock code and click analyze...</div>
+                </div>
+            </section>
+
+            <section id="warrant" class="section">
+                <h2>Warrant Screening</h2>
+                <button class="action-btn" onclick="loadWarrant()">Start Warrant Screening</button>
+                <div id="warrant-results" class="results">
+                    <div class="loading">Click the button above to start warrant screening...</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="warning">
+                ⚠️ Stock trading is risk. This analysis is not a profit guarantee.
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
