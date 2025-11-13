@@ -52,7 +52,7 @@ async function getStockData() {
     const res = await axios.get(API_URL);
     return res.data.data;
   } catch (error) {
-    console.error("Gagal mengambil data:".danger, error.message);
+    console.error("Failed to fetch data:".danger, error.message);
     return [];
   }
 }
@@ -75,25 +75,25 @@ function calculateMomentumStrength(stock, detailedData) {
     stock.volume / (detailedData.averageDailyVolume10Day || 1000000);
   if (volumeRatio > 4) {
     score += 25;
-    reasons.push(`Volume >4x rata-rata`);
+    reasons.push(`Volume >4x average`);
   } else if (volumeRatio > 2.5) {
     score += 20;
-    reasons.push(`Volume >2.5x rata-rata`);
+    reasons.push(`Volume >2.5x average`);
   } else if (volumeRatio > 1.5) {
     score += 15;
-    reasons.push(`Volume >1.5x rata-rata`);
+    reasons.push(`Volume >1.5x average`);
   }
 
   // Price momentum (25%)
   if (stock.changePercent > 8) {
     score += 25;
-    reasons.push(`Kenaikan >8%`);
+    reasons.push(`Increase >8%`);
   } else if (stock.changePercent > 5) {
     score += 20;
-    reasons.push(`Kenaikan >5%`);
+    reasons.push(`Increase >5%`);
   } else if (stock.changePercent > 3) {
     score += 15;
-    reasons.push(`Kenaikan >3%`);
+    reasons.push(`Increase >3%`);
   }
 
   // Price position relative to day range (20%)
@@ -101,13 +101,13 @@ function calculateMomentumStrength(stock, detailedData) {
     (stock.price - stock.dayLow) / (stock.dayHigh - stock.dayLow);
   if (rangePosition > 0.8 && rangePosition <= 0.9) {
     score += 20;
-    reasons.push(`Dekat high hari`);
+    reasons.push(`Near daily high`);
   } else if (rangePosition > 0.9) {
     score += 15;
-    reasons.push(`Sangat dekat high hari`);
+    reasons.push(`Very near daily high`);
   } else if (rangePosition > 0.6) {
     score += 15;
-    reasons.push(`Di atas midpoint`);
+    reasons.push(`Above midpoint`);
   }
 
   // Relative to moving averages (20%)
@@ -126,10 +126,10 @@ function calculateMomentumStrength(stock, detailedData) {
   // Market Cap (10%)
   if (stock.marketCap > 1e12) {
     score += 10;
-    reasons.push(`Likuiditas tinggi`);
+    reasons.push(`High liquidity`);
   } else if (stock.marketCap > 5e11) {
     score += 7;
-    reasons.push(`Likuiditas cukup`);
+    reasons.push(`Adequate liquidity`);
   }
 
   return { score, reasons };
@@ -164,8 +164,8 @@ async function screenScalpingStocks(stocks) {
   // Progress bar setup
   const bar = new cliProgress.SingleBar(
     {
-      format: `Screening [{bar}] {percentage}% | {value}/{total} Data Saham`
-        .bold.magenta, // warna pada format
+      format: `Screening [{bar}] {percentage}% | {value}/{total} Stock Data`
+        .bold.magenta, // color on format
       barCompleteChar: "\u2588", // tanpa warna
       barIncompleteChar: "\u2591", // tanpa warna
       hideCursor: true,
@@ -238,13 +238,13 @@ async function screenScalpingStocks(stocks) {
   return screenedStocks.sort((a, b) => b.momentumScore - a.momentumScore);
 }
 
-function displayTable(stocks, title = "RANKING 10 SAHAM MOMENTUM SCALPING") {
+function displayTable(stocks, title = "TOP 10 MOMENTUM SCALPING STOCKS RANKING") {
   const table = new Table({
     head: [
       "Rank",
       "Symbol",
-      "Nama",
-      "Harga",
+      "Name",
+      "Price",
       "Chg%",
       "Volume",
       "TP",
@@ -289,7 +289,7 @@ function displayTable(stocks, title = "RANKING 10 SAHAM MOMENTUM SCALPING") {
 }
 
 function displayTop5(stocks) {
-  console.log("\n" + "TOP 5 REKOMENDASI SCALPING \n");
+  console.log("\n" + "TOP 5 SCALPING RECOMMENDATIONS \n");
   stocks.forEach((stock, i) => {
     console.log(
       `RANKING #${i + 1}\n` +
@@ -299,9 +299,9 @@ function displayTop5(stocks) {
         `💰 Entry    : ${formatCurrency(stock.entry).info}\n` +
         `🎯 TP       : ${formatCurrency(Number(stock.tp)).accent}\n` +
         `🛑 SL       : ${formatCurrency(Number(stock.sl)).danger}\n` +
-        `⏳ Estimasi : ${formatTime(stock.estimatedTime).info}\n` +
+        `⏳ Estimate : ${formatTime(stock.estimatedTime).info}\n` +
         `⚡ Score    : ${stock.momentumScore.toString().yellow}\n` +
-        `💵 Potensi  : ${
+        `💵 Potential: ${
           formatCurrency(stock.potentialProfit).main
         } (${stock.profitPercent.toFixed(2)}%)\n` +
         `-------------------------------------`
@@ -325,12 +325,12 @@ async function runScreeningOnce(callback) {
 `.accent
   );
   console.log(
-    `⏳ ${new Date().toLocaleString("id-ID")} | Happy Cuan\n`.faded
+    `⏳ ${new Date().toLocaleString("id-ID")} | Happy Trading\n`.faded
   );
 
   const stocks = await getStockData();
   if (stocks.length === 0) {
-    console.log("Tidak ada data saham yang diterima".danger);
+    console.log("No stock data received".danger);
     if (callback) callback();
     return;
   }
@@ -338,7 +338,7 @@ async function runScreeningOnce(callback) {
   const scalpingSignals = await screenScalpingStocks(stocks);
 
   if (scalpingSignals.length === 0) {
-    console.log("Tidak ditemukan sinyal scalping yang kuat saat ini.".warn);
+    console.log("No strong scalping signals found at this time.".warn);
   } else {
     const top10 = scalpingSignals.slice(0, 10);
     const top5 = scalpingSignals.slice(0, 5);
@@ -348,9 +348,9 @@ async function runScreeningOnce(callback) {
 
     console.log(
       "\n".faded +
-        "⚠️ Trading saham berisiko. Analisis ini bukan jaminan profit.".warn
+        "⚠️ Stock trading is risky. This analysis is not a profit guarantee.".warn
     );
-    console.log("Fokus pada TOP 3 untuk peluang terbaik.".accent);
+    console.log("Focus on TOP 3 for the best opportunities.".accent);
   }
 
   // kembali ke menu

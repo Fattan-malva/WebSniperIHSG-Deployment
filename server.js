@@ -5,7 +5,7 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Suppress semua Yahoo Finance validation errors
+// Suppress all Yahoo Finance validation errors
 const originalConsoleError = console.error;
 console.error = function(...args) {
     const message = args[0];
@@ -37,7 +37,7 @@ app.get('/api/screening', async (req, res) => {
     // Adapt screening function for web - return data instead of console output
     const stocks = await getStockData();
     if (stocks.length === 0) {
-      return res.json({ error: 'Tidak ada data saham' });
+      return res.json({ error: 'No stock data' });
     }
     const scalpingSignals = await screenScalpingStocks(stocks);
     res.json({
@@ -57,7 +57,7 @@ app.get('/api/analisa/:symbol', async (req, res) => {
     if (response.data && response.data.data) {
       res.json(response.data.data);
     } else {
-      res.status(404).json({ error: 'Data tidak ditemukan' });
+      res.status(404).json({ error: 'Data not found' });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -140,36 +140,36 @@ function calculateMomentumStrength(stock, detailedData) {
   const volumeRatio = stock.volume / (detailedData.averageDailyVolume10Day || 1000000);
   if (volumeRatio > 4) {
     score += 25;
-    reasons.push(`Volume >4x rata-rata`);
+    reasons.push(`Volume >4x average`);
   } else if (volumeRatio > 2.5) {
     score += 20;
-    reasons.push(`Volume >2.5x rata-rata`);
+    reasons.push(`Volume >2.5x average`);
   } else if (volumeRatio > 1.5) {
     score += 15;
-    reasons.push(`Volume >1.5x rata-rata`);
+    reasons.push(`Volume >1.5x average`);
   }
 
   if (stock.changePercent > 8) {
     score += 25;
-    reasons.push(`Kenaikan >8%`);
+    reasons.push(`Increase >8%`);
   } else if (stock.changePercent > 5) {
     score += 20;
-    reasons.push(`Kenaikan >5%`);
+    reasons.push(`Increase >5%`);
   } else if (stock.changePercent > 3) {
     score += 15;
-    reasons.push(`Kenaikan >3%`);
+    reasons.push(`Increase >3%`);
   }
 
   const rangePosition = (stock.price - stock.dayLow) / (stock.dayHigh - stock.dayLow);
   if (rangePosition > 0.8 && rangePosition <= 0.9) {
     score += 20;
-    reasons.push(`Dekat high hari`);
+    reasons.push(`Near daily high`);
   } else if (rangePosition > 0.9) {
     score += 15;
-    reasons.push(`Sangat dekat high hari`);
+    reasons.push(`Very near daily high`);
   } else if (rangePosition > 0.6) {
     score += 15;
-    reasons.push(`Di atas midpoint`);
+    reasons.push(`Above midpoint`);
   }
 
   if (detailedData.fiftyDayAverage && detailedData.twoHundredDayAverage) {
@@ -186,10 +186,10 @@ function calculateMomentumStrength(stock, detailedData) {
 
   if (stock.marketCap > 1e12) {
     score += 10;
-    reasons.push(`Likuiditas tinggi`);
+    reasons.push(`High liquidity`);
   } else if (stock.marketCap > 5e11) {
     score += 7;
-    reasons.push(`Likuiditas cukup`);
+    reasons.push(`Adequate liquidity`);
   }
 
   return { score, reasons };

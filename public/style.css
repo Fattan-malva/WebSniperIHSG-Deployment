@@ -311,6 +311,10 @@ footer {
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+
     .menu {
         flex-direction: column;
         align-items: center;
@@ -319,6 +323,8 @@ footer {
     .menu-btn {
         width: 100%;
         max-width: 300px;
+        font-size: 14px;
+        padding: 10px 16px;
     }
 
     .input-group {
@@ -329,10 +335,21 @@ footer {
     .symbol-input {
         width: 100%;
         max-width: 400px;
+        font-size: 14px;
+        padding: 10px;
     }
 
     .ascii-art {
         font-size: 8px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    .action-btn {
+        font-size: 14px;
+        padding: 10px 20px;
     }
 
     table {
@@ -341,5 +358,135 @@ footer {
 
     th, td {
         padding: 8px;
+    }
+
+    .analysis-value, .strategy-title {
+        font-size: 16px;
+    }
+
+    .warning {
+        font-size: 16px;
+    }
+
+    .results {
+        padding: 15px;
+    }
+
+    .analysis-card, .strategy-section, .warrant-warning, .warrant-tips {
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    .ascii-art {
+        font-size: 8px;
+    }
+
+    h2 {
+        font-size: 18px;
+    }
+
+    .action-btn {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+
+    .menu-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .symbol-input {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    table {
+        font-size: 10px;
+    }
+
+    th, td {
+        padding: 6px;
+    }
+
+    .analysis-value, .strategy-title {
+        font-size: 14px;
+    }
+
+    .warning {
+        font-size: 14px;
+    }
+
+    .results {
+        padding: 10px;
+    }
+
+    .analysis-card, .strategy-section, .warrant-warning, .warrant-tips {
+        padding: 10px;
+    }
+
+    .timestamp {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 320px) {
+    .container {
+        padding: 5px;
+    }
+
+    .ascii-art {
+        font-size: 8px;
+    }
+
+    h2 {
+        font-size: 16px;
+    }
+
+    .action-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    .menu-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .symbol-input {
+        font-size: 12px;
+        padding: 6px;
+    }
+
+    table {
+        font-size: 8px;
+    }
+
+    th, td {
+        padding: 4px;
+    }
+
+    .analysis-value, .strategy-title {
+        font-size: 12px;
+    }
+
+    .warning {
+        font-size: 12px;
+    }
+
+    .results {
+        padding: 5px;
+    }
+
+    .analysis-card, .strategy-section, .warrant-warning, .warrant-tips {
+        padding: 5px;
+    }
+
+    .timestamp {
+        font-size: 10px;
     }
 }

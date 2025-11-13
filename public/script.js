@@ -260,23 +260,23 @@ function displayAnalisaResults(data) {
         <div class="analysis-card">
             <h3>Stock Analysis: ${data.symbol} - ${data.name}</h3>
             <div class="analysis-row">
-                <span class="analysis-label">Price:</span>
+                <span class="analysis-label">Price</span>
                 <span class="analysis-value">${formatCurrency(data.price)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Change:</span>
+                <span class="analysis-label">Change</span>
                 <span class="analysis-value ${changeClass}">${changeSymbol}${data.change} (${data.changePercent.toFixed(2)}%)</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Volume:</span>
+                <span class="analysis-label">Volume</span>
                 <span class="analysis-value">${data.volume.toLocaleString('en-US')}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Market Cap:</span>
+                <span class="analysis-label">Market Cap</span>
                 <span class="analysis-value">${formatCurrency(data.marketCap)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">High/Low:</span>
+                <span class="analysis-label">High/Low</span>
                 <span class="analysis-value">${formatCurrency(data.dayHigh)} / ${formatCurrency(data.dayLow)}</span>
             </div>
     `;
@@ -284,31 +284,31 @@ function displayAnalisaResults(data) {
     if (data.fullData) {
         html += `
             <div class="analysis-row">
-                <span class="analysis-label">MA50:</span>
+                <span class="analysis-label">MA50</span>
                 <span class="analysis-value">${formatCurrency(data.fullData.fiftyDayAverage || 0)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">MA200:</span>
+                <span class="analysis-label">MA200</span>
                 <span class="analysis-value">${formatCurrency(data.fullData.twoHundredDayAverage || 0)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">PER:</span>
+                <span class="analysis-label">PER</span>
                 <span class="analysis-value">${(data.fullData.trailingPE || '-')}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">PBV:</span>
+                <span class="analysis-label">PBV</span>
                 <span class="analysis-value">${(data.fullData.priceToBook || '-')}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Div Yield:</span>
+                <span class="analysis-label">Div Yield</span>
                 <span class="analysis-value">${(data.fullData.dividendYield || '-')}%</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">EPS:</span>
+                <span class="analysis-label">EPS</span>
                 <span class="analysis-value">${(data.fullData.epsTrailingTwelveMonths || '-')}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Analyst Rating:</span>
+                <span class="analysis-label">Analyst Rating</span>
                 <span class="analysis-value">${(data.fullData.averageAnalystRating || '-')}</span>
             </div>
         `;
@@ -356,29 +356,29 @@ function displayAnalisaResults(data) {
         <div class="strategy-section">
             <div class="strategy-title">Trading Strategy:</div>
             <div class="analysis-row">
-                <span class="analysis-label">Signal:</span>
+                <span class="analysis-label">Signal</span>
                 <span class="analysis-value">${note}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Entry Position:</span>
+                <span class="analysis-label">Entry</span>
                 <span class="analysis-value">${formatCurrency(entry)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Take Profit:</span>
+                <span class="analysis-label">Take Profit</span>
                 <span class="analysis-value">${formatCurrency(tp1)} (TP1), ${formatCurrency(tp2)} (TP2)</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Stop Loss:</span>
+                <span class="analysis-label">Stop Loss</span>
                 <span class="analysis-value">${formatCurrency(sl)}</span>
             </div>
             <div class="analysis-row">
-                <span class="analysis-label">Risk/Reward:</span>
+                <span class="analysis-label">Risk/Reward</span>
                 <span class="analysis-value">${rr}</span>
             </div>
         </div>
 
         <div class="analysis-row">
-            <span class="analysis-label">Last Update:</span>
+            <span class="analysis-label">Last Update</span>
             <span class="analysis-value">${new Date(data.lastUpdated).toLocaleString('en-US')}</span>
         </div>
     `;
