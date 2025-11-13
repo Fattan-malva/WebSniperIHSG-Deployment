@@ -201,7 +201,7 @@ function displayScreeningResults(top10, top5) {
                     <span class="analysis-value">${formatCurrency(stock.potentialProfit)} (${stock.profitPercent.toFixed(2)}%)</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">Note</span>
+                    <span class="analysis-label">Note : </span>
                     <span class="analysis-value">${stock.reasons.join(', ')}</span>
                 </div>
             </div>
