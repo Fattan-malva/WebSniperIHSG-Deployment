@@ -202,7 +202,7 @@ function displayScreeningResults(top10, top5) {
                 </div>
                 <div class="analysis-row">
                     <span class="analysis-label">📝 </span>
-                    <span class="analysis-value">${stock.reasons.join(', ')}</span>
+                    <span class="analysis-value">   ${stock.reasons.join(', ')}</span>
                 </div>
             </div>
         `;
