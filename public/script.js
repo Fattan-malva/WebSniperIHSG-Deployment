@@ -193,7 +193,7 @@ function displayScreeningResults(top10, top5) {
                     <span class="analysis-value">${formatTime(stock.estimatedTime)}</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">⚡ Score:</span>
+                    <span class="analysis-label">⚡ Score</span>
                     <span class="analysis-value">${stock.momentumScore}</span>
                 </div>
                 <div class="analysis-row">
