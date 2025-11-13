@@ -169,27 +169,27 @@ function displayScreeningResults(top10, top5) {
             <div class="analysis-card">
                 <h4>RANKING #${i + 1}</h4>
                 <div class="analysis-row">
-                    <span class="analysis-label">🏢 Name:</span>
+                    <span class="analysis-label">🏢 Name</span>
                     <span class="analysis-value">${stock.name}</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">📊 Symbol:</span>
+                    <span class="analysis-label">📊 Symbol</span>
                     <span class="analysis-value">${stock.symbol}</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">💰 Entry:</span>
+                    <span class="analysis-label">💰 Entry</span>
                     <span class="analysis-value">${formatCurrency(stock.entry)}</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">🎯 TP:</span>
+                    <span class="analysis-label">🎯 TP</span>
                     <span class="analysis-value">${formatCurrency(Number(stock.tp))}</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">🛑 SL:</span>
+                    <span class="analysis-label">🛑 SL</span>
                     <span class="analysis-value">${formatCurrency(Number(stock.sl))}</span>
                 </div>
                 <div class="analysis-row">
-                <span class="analysis-label">⏳ Estimation:</span>
+                <span class="analysis-label">⏳ Est.</span>
                     <span class="analysis-value">${formatTime(stock.estimatedTime)}</span>
                 </div>
                 <div class="analysis-row">
@@ -197,11 +197,11 @@ function displayScreeningResults(top10, top5) {
                     <span class="analysis-value">${stock.momentumScore}</span>
                 </div>
                 <div class="analysis-row">
-                <span class="analysis-label">💵 Potential:</span>
+                <span class="analysis-label">💵 Pnl</span>
                     <span class="analysis-value">${formatCurrency(stock.potentialProfit)} (${stock.profitPercent.toFixed(2)}%)</span>
                 </div>
                 <div class="analysis-row">
-                    <span class="analysis-label">Note:</span>
+                    <span class="analysis-label">Note</span>
                     <span class="analysis-value">${stock.reasons.join(', ')}</span>
                 </div>
             </div>
