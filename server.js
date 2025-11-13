@@ -64,16 +64,7 @@ app.get('/api/analisa/:symbol', async (req, res) => {
   }
 });
 
-app.get('/api/warrant', async (req, res) => {
-  try {
-    // Adapt warrant screener
-    const warrants = await getWarrantData();
-    const screenedWarrants = await screenWarrants(warrants);
-    res.json(screenedWarrants);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Removed warrant API endpoint
 
 // Helper functions (extracted from logic files)
 async function getStockData() {
