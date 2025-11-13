@@ -140,7 +140,7 @@ function displayScreeningResults(top10, top5) {
         html += `
             <tr class="${rankClass}">
                 <td>${i + 1}</td>
-                <td>${stock.symbol}</td>
+                <td><strong>${stock.symbol.replace('.JK', '')}</strong></td>
                 <td>${stock.name}</td>
                 <td>${formatCurrency(stock.price)}</td>
                 <td class="${changeClass}">${changeSymbol}${stock.changePercent.toFixed(2)}%</td>
@@ -170,11 +170,11 @@ function displayScreeningResults(top10, top5) {
                 <h4>RANKING #${i + 1}</h4>
                 <div class="analysis-row">
                     <span class="analysis-label">🏢 Name</span>
-                    <span class="analysis-value">${stock.name}</span>
+                    <span class="analysis-value">PT. ${stock.name}</span>
                 </div>
                 <div class="analysis-row">
                     <span class="analysis-label">📊 Symbol</span>
-                    <span class="analysis-value">${stock.symbol}</span>
+                    <span class="analysis-value" style ="font-weight:bold;">${stock.symbol.replace('.JK', '')}</span>
                 </div>
                 <div class="analysis-row">
                     <span class="analysis-label">💰 Entry</span>
@@ -258,7 +258,7 @@ function displayAnalisaResults(data) {
 
     let html = `
         <div class="analysis-card">
-            <h3>Stock Analysis: ${data.symbol} - ${data.name}</h3>
+            <h3>Stock Analysis: ${data.symbol.replace('.JK', '')} - ${data.name}</h3>
             <div class="analysis-row">
                 <span class="analysis-label">Price</span>
                 <span class="analysis-value">${formatCurrency(data.price)}</span>
@@ -389,7 +389,7 @@ function displayAnalisaResults(data) {
 
 
 // Allow Enter key for symbol input
-document.getElementById('symbol-input').addEventListener('keypress', function(e) {
+document.getElementById('symbol-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         analisaSaham();
     }
