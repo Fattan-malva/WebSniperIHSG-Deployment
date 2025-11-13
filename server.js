@@ -238,24 +238,38 @@ async function getWarrantData() {
   const warrantSymbols = getWarrantSymbols();
   const results = [];
 
-  for (const symbol of warrantSymbols) {
-    try {
-      const response = await axios.get(`https://sniper-ihsg.vercel.app/api/stocks/${symbol}`);
-      if (response.data && response.data.success && response.data.data) {
-        const stock = response.data.data;
-        if (stock.price > 0 && stock.volume > 0) {
-          results.push({
-            symbol: stock.symbol,
-            regularMarketPrice: stock.price,
-            regularMarketVolume: stock.volume,
-            regularMarketChange: stock.change,
-            regularMarketChangePercent: stock.changePercent
-          });
+  // Process in batches to avoid overwhelming the API
+  const batchSize = 10;
+  for (let i = 0; i < warrantSymbols.length; i += batchSize) {
+    const batch = warrantSymbols.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (symbol) => {
+      try {
+        // Convert to lowercase as the API expects lowercase symbols
+        const lowerSymbol = symbol.toLowerCase();
+        const response = await axios.get(`https://sniper-ihsg.vercel.app/api/stocks/${lowerSymbol}`);
+        if (response.data && response.data.success && response.data.data) {
+          const stock = response.data.data;
+          if (stock.price > 0 && stock.volume > 0) {
+            return {
+              symbol: stock.symbol,
+              regularMarketPrice: stock.price,
+              regularMarketVolume: stock.volume,
+              regularMarketChange: stock.change,
+              regularMarketChangePercent: stock.changePercent
+            };
+          }
         }
+      } catch (error) {
+        // Skip if warrant doesn't exist or API error
       }
-    } catch (error) {
-      // Skip if warrant doesn't exist or API error
-    }
+      return null;
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    results.push(...batchResults.filter(result => result !== null));
+
+    // Small delay between batches to be respectful to the API
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
 
   return results;
