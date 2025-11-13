@@ -216,11 +216,9 @@ function estimateTimeToTP(stock, momentumScore, volumeRatio, currentHour) {
 }
 
 async function getWarrantData() {
-  const yahooFinance = require('yahoo-finance2').default;
+  const axios = require('axios');
   const fs = require('fs');
   const parse = require('csv-parse/sync');
-
-  yahooFinance.setGlobalConfig({ validation: { logErrors: false } });
 
   function getAllIDXStockCodes() {
     try {
@@ -234,7 +232,7 @@ async function getWarrantData() {
 
   function getWarrantSymbols() {
     const stockCodes = getAllIDXStockCodes();
-    return stockCodes.map(code => `${code}-W.JK`);
+    return stockCodes.map(code => `${code}-W`);
   }
 
   const warrantSymbols = getWarrantSymbols();
@@ -242,12 +240,21 @@ async function getWarrantData() {
 
   for (const symbol of warrantSymbols) {
     try {
-      const stock = await yahooFinance.quote(symbol, { validateResult: false });
-      if (stock?.symbol && stock.regularMarketPrice !== undefined && stock.regularMarketPrice > 0 && (stock.regularMarketVolume || 0) > 0) {
-        results.push(stock);
+      const response = await axios.get(`https://sniper-ihsg.vercel.app/api/stocks/${symbol}`);
+      if (response.data && response.data.success && response.data.data) {
+        const stock = response.data.data;
+        if (stock.price > 0 && stock.volume > 0) {
+          results.push({
+            symbol: stock.symbol,
+            regularMarketPrice: stock.price,
+            regularMarketVolume: stock.volume,
+            regularMarketChange: stock.change,
+            regularMarketChangePercent: stock.changePercent
+          });
+        }
       }
     } catch (error) {
-      // Skip
+      // Skip if warrant doesn't exist or API error
     }
   }
 
@@ -276,7 +283,7 @@ async function screenWarrants(warrants) {
 async function getParentStockData(symbol) {
   const axios = require('axios');
   try {
-    const parentSymbol = symbol.replace('-W.JK', '');
+    const parentSymbol = symbol.replace('-W', '');
     const res = await axios.get(`https://sniper-ihsg.vercel.app/api/stocks/${parentSymbol}`);
     const stock = res.data.data;
 
