@@ -1,78 +1,40 @@
-const axios = require("axios");
-const colors = require("colors");
-const Table = require("cli-table3");
-const cliProgress = require("cli-progress");
+const axios = require('axios');
 
-const API_URL = "https://sniper-ihsg.vercel.app/api/stocks";
-const SYMBOL_API_URL = "https://sniper-ihsg.vercel.app/api/stocks";
-const TP_PERCENT = 5;
-const SL_PERCENT = 3;
-const CHECK_INTERVAL = 300000; // 5 menit
-
-// Hacker theme: hijau, hitam, kuning untuk warning
-colors.setTheme({
-  main: "green",
-  accent: "brightGreen",
-  warn: "yellow",
-  danger: "red",
-  info: "cyan",
-  faded: "grey",
-  highlight: ["black", "bgGreen"],
-  tableHead: ["green", "bold"],
-  tableCell: "brightGreen",
-  purple: "yellow",
-});
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function clearConsole() {
-  process.stdout.write("\x1B[2J\x1B[0f");
-}
-
-function formatCurrency(num) {
-  return "Rp" + num.toLocaleString("id-ID");
-}
-
-function formatTime(minutes) {
-  if (minutes < 60) {
-    return `${minutes}m`;
-  } else {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0
-      ? `${hours}h ${remainingMinutes}m`
-      : `${hours}h`;
-  }
-}
-
+/**
+ * Get stock data from API
+ */
 async function getStockData() {
   try {
-    const res = await axios.get(API_URL);
+    const res = await axios.get('https://sniper-ihsg.vercel.app/api/stocks');
     return res.data.data;
   } catch (error) {
-    console.error("Failed to fetch data:".danger, error.message);
+    console.error('Error fetching stock data:', error.message);
     return [];
   }
 }
 
+/**
+ * Get detailed stock data for a specific symbol
+ */
 async function getDetailedStockData(symbol) {
   try {
-    const res = await axios.get(`${SYMBOL_API_URL}/${symbol}`);
+    const res = await axios.get(`https://sniper-ihsg.vercel.app/api/stocks/${symbol}`);
     return res.data.data;
   } catch (error) {
+    console.error(`Error fetching detailed data for ${symbol}:`, error.message);
     return null;
   }
 }
 
+/**
+ * Calculate momentum strength score
+ */
 function calculateMomentumStrength(stock, detailedData) {
   let score = 0;
   const reasons = [];
 
-  // Volume analysis (25%)
-  const volumeRatio =
-    stock.volume / (detailedData.averageDailyVolume10Day || 1000000);
+  // Volume ratio analysis
+  const volumeRatio = stock.volume / (detailedData.averageDailyVolume10Day || 1000000);
   if (volumeRatio > 4) {
     score += 25;
     reasons.push(`Volume >4x average`);
@@ -84,7 +46,7 @@ function calculateMomentumStrength(stock, detailedData) {
     reasons.push(`Volume >1.5x average`);
   }
 
-  // Price momentum (25%)
+  // Price change analysis
   if (stock.changePercent > 8) {
     score += 25;
     reasons.push(`Increase >8%`);
@@ -96,9 +58,8 @@ function calculateMomentumStrength(stock, detailedData) {
     reasons.push(`Increase >3%`);
   }
 
-  // Price position relative to day range (20%)
-  const rangePosition =
-    (stock.price - stock.dayLow) / (stock.dayHigh - stock.dayLow);
+  // Range position analysis (price relative to daily high/low)
+  const rangePosition = (stock.price - stock.dayLow) / (stock.dayHigh - stock.dayLow);
   if (rangePosition > 0.8 && rangePosition <= 0.9) {
     score += 20;
     reasons.push(`Near daily high`);
@@ -110,7 +71,7 @@ function calculateMomentumStrength(stock, detailedData) {
     reasons.push(`Above midpoint`);
   }
 
-  // Relative to moving averages (20%)
+  // Moving averages analysis
   if (detailedData.fiftyDayAverage && detailedData.twoHundredDayAverage) {
     const above50MA = stock.price > detailedData.fiftyDayAverage;
     const above200MA = stock.price > detailedData.twoHundredDayAverage;
@@ -123,7 +84,7 @@ function calculateMomentumStrength(stock, detailedData) {
     }
   }
 
-  // Market Cap (10%)
+  // Market cap / liquidity analysis
   if (stock.marketCap > 1e12) {
     score += 10;
     reasons.push(`High liquidity`);
@@ -135,81 +96,55 @@ function calculateMomentumStrength(stock, detailedData) {
   return { score, reasons };
 }
 
+/**
+ * Estimate time to reach take profit
+ */
 function estimateTimeToTP(stock, momentumScore, volumeRatio, currentHour) {
   let baseTime = 180 - momentumScore * 1.5;
-  const volumeFactor =
-    volumeRatio > 4
-      ? 0.5
-      : volumeRatio > 2.5
-      ? 0.7
-      : volumeRatio > 1.5
-      ? 0.85
-      : 1;
+
+  // Volume factor
+  const volumeFactor = volumeRatio > 4 ? 0.5 : volumeRatio > 2.5 ? 0.7 : volumeRatio > 1.5 ? 0.85 : 1;
   baseTime *= volumeFactor;
+
+  // Time factor based on market hours
   let timeFactor = 1;
-  if (
-    (currentHour >= 9 && currentHour < 10) ||
-    (currentHour >= 14 && currentHour < 15)
-  )
-    timeFactor = 0.7;
+  if ((currentHour >= 9 && currentHour < 10) || (currentHour >= 14 && currentHour < 15)) timeFactor = 0.7;
   else if (currentHour >= 12 && currentHour < 13) timeFactor = 1.2;
   baseTime *= timeFactor;
+
   return Math.max(30, Math.min(240, Math.round(baseTime)));
 }
 
+/**
+ * Screen stocks for scalping opportunities
+ */
 async function screenScalpingStocks(stocks) {
   const screenedStocks = [];
   const currentHour = new Date().getHours();
 
-  // Progress bar setup
-  const bar = new cliProgress.SingleBar(
-    {
-      format: `Screening [{bar}] {percentage}% | {value}/{total} Stock Data`
-        .bold.magenta, // color on format
-      barCompleteChar: "\u2588", // tanpa warna
-      barIncompleteChar: "\u2591", // tanpa warna
-      hideCursor: true,
-      barsize: 50, // panjang bar
-      linewrap: true,
-    },
-    cliProgress.Presets.shades_classic
-  );
-
-  bar.start(stocks.length, 0);
-
-  for (const [i, stock] of stocks.entries()) {
-    if (
-      stock.changePercent < 3 ||
-      stock.volume < 5000000 ||
-      stock.price > 5000 ||
-      stock.price < 50
-    ) {
-      bar.increment();
+  for (const stock of stocks) {
+    // Filter by basic criteria
+    if (stock.changePercent < 3 || stock.volume < 5000000 || stock.price > 5000 || stock.price < 50) {
       continue;
     }
+
+    // Get detailed data for the stock
     const detailedData = await getDetailedStockData(stock.symbol);
     if (!detailedData || !detailedData.fullData) {
-      bar.increment();
       continue;
     }
-    const { score, reasons } = calculateMomentumStrength(
-      stock,
-      detailedData.fullData
-    );
+
+    // Calculate momentum score
+    const { score, reasons } = calculateMomentumStrength(stock, detailedData.fullData);
     if (score < 50) {
-      bar.increment();
       continue;
     }
-    const tp = stock.price * (1 + TP_PERCENT / 100);
-    const sl = stock.price * (1 - SL_PERCENT / 100);
-    const volumeRatio =
-      stock.volume / (detailedData.fullData.averageDailyVolume10Day || 1000000);
-    const estimatedMinutes = estimateTimeToTP(
-      stock,
-      score,
-      volumeRatio,
-      currentHour
-    );
+
+    // Calculate take profit and stop loss
+    const tp = stock.price * (1 + 5 / 100);
+    const sl = stock.price * (1 - 3 / 100);
+    const volumeRatio = stock.volume / (detailedData.fullData.averageDailyVolume10Day || 1000000);
+    const estimatedMinutes = estimateTimeToTP(stock, score, volumeRatio, currentHour);
     const potentialProfit = tp - stock.price;
     const profitPercent = (potentialProfit / stock.price) * 100;
 
@@ -231,130 +166,31 @@ async function screenScalpingStocks(stocks) {
       profitPercent: profitPercent,
       reasons: reasons,
     });
-    bar.increment();
-    await sleep(50);
   }
-  bar.stop();
+
   return screenedStocks.sort((a, b) => b.momentumScore - a.momentumScore);
 }
 
-function displayTable(stocks, title = "TOP 10 MOMENTUM SCALPING STOCKS RANKING") {
-  const table = new Table({
-    head: [
-      "Rank",
-      "Symbol",
-      "Name",
-      "Price",
-      "Chg%",
-      "Volume",
-      "TP",
-      "SL",
-      "Est.TP",
-      "Score",
-    ].map((h) => h.tableHead),
-    style: { head: [], border: ["green"] },
-    colAligns: [
-      "middle",
-      "left",
-      "left",
-      "right",
-      "right",
-      "right",
-      "right",
-      "right",
-      "right",
-      "right",
-    ],
-  });
-
-  stocks.forEach((stock, i) => {
-    table.push([
-      (i + 1).toString().accent,
-      stock.symbol.main,
-      stock.name.faded,
-      formatCurrency(stock.price).main,
-      `${stock.changePercent > 0 ? "+" : ""}${stock.changePercent.toFixed(2)}%`[
-        stock.changePercent > 0 ? "accent" : "danger"
-      ],
-      stock.volume.toLocaleString("id-ID").faded,
-      formatCurrency(Number(stock.tp)).accent,
-      formatCurrency(Number(stock.sl)).danger,
-      formatTime(stock.estimatedTime).info,
-      stock.momentumScore.toString().yellow,
-    ]);
-  });
-
-  console.log("\n" + title.main);
-  console.log(table.toString());
-}
-
-function displayTop5(stocks) {
-  console.log("\n" + "TOP 5 SCALPING RECOMMENDATIONS \n");
-  stocks.forEach((stock, i) => {
-    console.log(
-      `RANKING #${i + 1}\n` +
-        `-------------------------------------\n` +
-        `🏢 Name     : ${stock.name}\n` +
-        `📊 Symbol   : ${stock.symbol.magenta}\n` +
-        `💰 Entry    : ${formatCurrency(stock.entry).info}\n` +
-        `🎯 TP       : ${formatCurrency(Number(stock.tp)).accent}\n` +
-        `🛑 SL       : ${formatCurrency(Number(stock.sl)).danger}\n` +
-        `⏳ Estimate : ${formatTime(stock.estimatedTime).info}\n` +
-        `⚡ Score    : ${stock.momentumScore.toString().yellow}\n` +
-        `💵 Potential: ${
-          formatCurrency(stock.potentialProfit).main
-        } (${stock.profitPercent.toFixed(2)}%)\n` +
-        `-------------------------------------`
-    );
-
-    console.log(`Note: ${stock.reasons.join(", ").faded}\n`);
-  });
-}
-
-async function runScreeningOnce(callback) {
-  clearConsole();
-  console.log(
-    `
-░██████╗███╗░░██╗██╗██████╗░███████╗██████╗░  ██╗██╗░░██╗░██████╗░██████╗░
-██╔════╝████╗░██║██║██╔══██╗██╔════╝██╔══██╗  ██║██║░░██║██╔════╝██╔════╝░
-╚█████╗░██╔██╗██║██║██████╔╝█████╗░░██████╔╝  ██║███████║╚█████╗░██║░░██╗░
-░╚═══██╗██║╚████║██║██╔═══╝░██╔══╝░░██╔══██╗  ██║██╔══██║░╚═══██╗██║░░╚██╗
-██████╔╝██║░╚███║██║██║░░░░░███████╗██║░░██║  ██║██║░░██║██████╔╝╚██████╔╝
-╚═════╝░╚═╝░░╚══╝╚═╝╚═╝░░░░░╚══════╝╚═╝░░╚═╝  ╚═╝╚═╝░░╚═╝╚═════╝░░╚═════╝░
-                IDX SCALPING SNIPER • by Fattan Malva • v3.0
-`.accent
-  );
-  console.log(
-    `⏳ ${new Date().toLocaleString("id-ID")} | Happy Trading\n`.faded
-  );
-
-  const stocks = await getStockData();
-  if (stocks.length === 0) {
-    console.log("No stock data received".danger);
-    if (callback) callback();
-    return;
+/**
+ * Run screening once (main export)
+ */
+async function runScreeningOnce() {
+  try {
+    const stocks = await getStockData();
+    if (stocks.length === 0) {
+      return { error: 'No stock data' };
+    }
+    const scalpingSignals = await screenScalpingStocks(stocks);
+    return {
+      success: true,
+      top10: scalpingSignals.slice(0, 10),
+      top5: scalpingSignals.slice(0, 5),
+      total: scalpingSignals.length
+    };
+  } catch (error) {
+    console.error('Error in runScreeningOnce:', error.message);
+    return { error: error.message };
   }
-
-  const scalpingSignals = await screenScalpingStocks(stocks);
-
-  if (scalpingSignals.length === 0) {
-    console.log("No strong scalping signals found at this time.".warn);
-  } else {
-    const top10 = scalpingSignals.slice(0, 10);
-    const top5 = scalpingSignals.slice(0, 5);
-
-    displayTable(top10);
-    displayTop5(top5);
-
-    console.log(
-      "\n".faded +
-        "⚠️ Stock trading is risky. This analysis is not a profit guarantee.".warn
-    );
-    console.log("Focus on TOP 3 for the best opportunities.".accent);
-  }
-
-  // kembali ke menu
-  if (callback) callback();
 }
 
 module.exports = runScreeningOnce;
