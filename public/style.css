@@ -84,6 +84,17 @@ header {
     animation: fadeIn 0.5s ease;
 }
 
+.analysis-subsection-title {
+    color: var(--text-accent);
+    font-size: 20px;
+}
+
+div.section-title {
+    color: var(--text-warn);
+    font-size: 22px;
+    font-weight: bold;
+}
+
 .section.active {
     display: block;
 }
@@ -213,7 +224,7 @@ td {
 
 .analysis-label {
     font-weight: bold;
-    color: var(--text-info);
+    color: white;
 }
 
 .analysis-value {

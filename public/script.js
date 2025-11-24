@@ -102,28 +102,28 @@ async function loadScreening() {
         updateProgress(75);
 
         const response = await fetch('/api/screening');
-            const data = await response.json();
+        const data = await response.json();
 
-            updateProgress(100);
+        updateProgress(100);
 
-            if (data.error) {
-                const detail = data.details ? `: ${data.details}` : '';
-                showError('screening-results', `Server error${detail}`);
-                console.error('Screening API returned error:', data);
-                // Optionally show debug info in console for deeper inspection
-                if (data.debug) console.debug('Screening debug:', data.debug);
-                return;
-            }
+        if (data.error) {
+            const detail = data.details ? `: ${data.details}` : '';
+            showError('screening-results', `Server error${detail}`);
+            console.error('Screening API returned error:', data);
+            // Optionally show debug info in console for deeper inspection
+            if (data.debug) console.debug('Screening debug:', data.debug);
+            return;
+        }
 
-            // Defensive checks in case API shape changed
-            if (!Array.isArray(data.top10) || !Array.isArray(data.top5)) {
-                console.warn('Unexpected screening response shape:', data);
-                showError('screening-results', 'Unexpected response shape from server — check console for details');
-                console.debug('Full screening response:', data);
-                return;
-            }
+        // Defensive checks in case API shape changed
+        if (!Array.isArray(data.top10) || !Array.isArray(data.top5)) {
+            console.warn('Unexpected screening response shape:', data);
+            showError('screening-results', 'Unexpected response shape from server — check console for details');
+            console.debug('Full screening response:', data);
+            return;
+        }
 
-            displayScreeningResults(data.top10, data.top5);
+        displayScreeningResults(data.top10, data.top5);
     } catch (error) {
         showError('screening-results', `Failed to load screening data: ${error.message}`);
         console.error('Failed to fetch /api/screening:', error);
@@ -240,7 +240,6 @@ function displayScreeningResults(top10, top5) {
     document.getElementById('screening-results').innerHTML = html;
 }
 
-// Stock Analysis function
 async function analisaSaham() {
     const symbol = document.getElementById('symbol-input').value.trim().toUpperCase();
     if (!symbol) {
@@ -252,7 +251,6 @@ async function analisaSaham() {
     const updateProgress = showLoadingWithProgress('analisa-results', `Analyzing ${symbol}...`);
 
     try {
-        // Simulate progress updates
         updateProgress(20);
         await new Promise(resolve => setTimeout(resolve, 500));
         updateProgress(50);
@@ -260,151 +258,310 @@ async function analisaSaham() {
         updateProgress(80);
 
         const response = await fetch(`/api/analisa/${symbol}`);
-        const data = await response.json();
+        const result = await response.json();
 
         updateProgress(100);
 
-        if (data.error) {
-            showError('analisa-results', data.error);
+        if (result.error) {
+            showError('analisa-results', result.error);
             return;
         }
 
-        displayAnalisaResults(data);
+        if (!result.success || !result.data) {
+            showError('analisa-results', 'No analysis data available');
+            return;
+        }
+
+        displayAnalisaResults(result.data);
     } catch (error) {
-        showError('analisa-results', 'Failed to analyze stock');
+        showError('analisa-results', `Failed to analyze stock: ${error.message || error}`);
     }
 }
 
-function displayAnalisaResults(data) {
+function displayAnalisaResults(d) {
+    const data = d || {};
+
     const changeClass = data.change > 0 ? 'positive' : 'negative';
     const changeSymbol = data.change > 0 ? '+' : '';
 
+    // Add highlight class for summary signals
+    const summary = data.summary || {};
+    const signalClass = summary.signal && summary.signal.toUpperCase() === 'STRONG_BULLISH' ? 'key-signal positive' :
+                        summary.signal && summary.signal.toUpperCase() === 'STRONG_BEARISH' ? 'key-signal negative' : '';
+
     let html = `
         <div class="analysis-card">
-            <h3>Stock Analysis: ${data.symbol.replace('.JK', '')} - ${data.name}</h3>
+            <h3>Stock Analysis: ${data.symbol?.replace('.JK', '') || 'N/A'} - ${data.name || 'N/A'}</h3>
             <div class="analysis-row">
                 <span class="analysis-label">Price</span>
                 <span class="analysis-value">${formatCurrency(data.price)}</span>
             </div>
-    <div class="analysis-row">
+            <div class="analysis-row">
                 <span class="analysis-label">Change</span>
-                <span class="analysis-value ${changeClass}">${changeSymbol}${data.change} ${(data.changePercent !== undefined && data.changePercent !== null) ? `(${data.changePercent.toFixed(2)}%)` : '(N/A)'}</span>
+                <span class="analysis-value ${changeClass}">
+                    ${changeSymbol}${data.change ?? 'N/A'} (${(data.changePercent != null ? (data.changePercent * 100).toFixed(2) : 'N/A')}%)
+                </span>
             </div>
             <div class="analysis-row">
                 <span class="analysis-label">Volume</span>
-                <span class="analysis-value">${data.volume.toLocaleString('en-US')}</span>
+                <span class="analysis-value">${data.volume?.toLocaleString('en-US') ?? 'N/A'}</span>
             </div>
             <div class="analysis-row">
                 <span class="analysis-label">Market Cap</span>
                 <span class="analysis-value">${formatCurrency(data.marketCap)}</span>
             </div>
-            <div class="analysis-row">
-                <span class="analysis-label">High/Low</span>
-                <span class="analysis-value">${formatCurrency(data.dayHigh)} / ${formatCurrency(data.dayLow)}</span>
-            </div>
     `;
 
     if (data.fullData) {
+        const fd = data.fullData?.fullData || data.fullData; // safer fallback
+
         html += `
-            <div class="analysis-row">
-                <span class="analysis-label">MA50</span>
-                <span class="analysis-value">${formatCurrency(data.fullData.fiftyDayAverage || 0)}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">MA200</span>
-                <span class="analysis-value">${formatCurrency(data.fullData.twoHundredDayAverage || 0)}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">PER</span>
-                <span class="analysis-value">${(data.fullData.trailingPE || '-')}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">PBV</span>
-                <span class="analysis-value">${(data.fullData.priceToBook || '-')}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Div Yield</span>
-                <span class="analysis-value">${(data.fullData.dividendYield || '-')}%</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">EPS</span>
-                <span class="analysis-value">${(data.fullData.epsTrailingTwelveMonths || '-')}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Analyst Rating</span>
-                <span class="analysis-value">${(data.fullData.averageAnalystRating || '-')}</span>
-            </div>
+        <div class="analysis-row">
+            <span class="analysis-label">MA50</span>
+            <span class="analysis-value">${formatCurrency(fd?.fiftyDayAverage ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">MA200</span>
+            <span class="analysis-value">${formatCurrency(fd?.twoHundredDayAverage ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">PER</span>
+            <span class="analysis-value">${fd?.trailingPE ?? '-'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">PBV</span>
+            <span class="analysis-value">${fd?.priceToBook ?? '-'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Div Yield</span>
+            <span class="analysis-value">${fd?.dividendYield ?? 0}%</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">EPS</span>
+            <span class="analysis-value">${fd?.epsTrailingTwelveMonths ?? '-'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Analyst Rating</span>
+            <span class="analysis-value">${fd?.averageAnalystRating ?? '-'}</span>
+        </div>
+    `;
+    }
+    if (data.summary) {
+        const sum = data.summary;
+
+        html += `
+    <div class="section-title">Summary</div>
+
+    <div class="analysis-row">
+        <span class="analysis-label">Signal</span>
+        <span class="analysis-value ${signalClass}">${sum.signal ?? 'N/A'}</span>
+    </div>
+
+    <div class="analysis-row">
+        <span class="analysis-label">Action</span>
+        <span class="analysis-value">${sum.action ?? 'N/A'}</span>
+    </div>
+
+    <div class="analysis-row">
+        <span class="analysis-label">Confidence</span>
+        <span class="analysis-value">${sum.confidence ?? 'N/A'}</span>
+    </div>
+
+    <div class="analysis-row">
+        <span class="analysis-label">Risk Level</span>
+        <span class="analysis-value">${sum.riskLevel ?? 'N/A'}</span>
+    </div>
+
+    <div class="analysis-row">
+        <span class="analysis-label">Time Frame</span>
+        <span class="analysis-value">${sum.timeFrame ?? 'N/A'}</span>
+    </div>
+    `;
+    }
+
+
+
+    if (data.summary?.keyLevels) {
+        const kl = data.summary.keyLevels;
+        html += `
+    <div class="analysis-subsection-title">Summary Key Levels</div>
+    <div class="analysis-row">
+        <span class="analysis-label">Support</span>
+        <span class="analysis-value">${formatCurrency(kl.support ?? 0)}</span>
+    </div>
+    <div class="analysis-row">
+        <span class="analysis-label">Resistance</span>
+        <span class="analysis-value">${formatCurrency(kl.resistance ?? 0)}</span>
+    </div>
+    `;
+    }
+
+
+
+    if (data.technicalAnalysis) {
+        const ta = data.technicalAnalysis;
+
+        html += `
+        <div class="section-title">Technical Analysis</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Trend Direction</span>
+            <span class="analysis-value">${ta.trend?.trendDirection ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Golden Cross</span>
+            <span class="analysis-value">${ta.trend?.goldenCross ? 'Yes' : 'No'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Volume Signal</span>
+            <span class="analysis-value">${ta.volume?.volumeSignal ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Price Position</span>
+            <span class="analysis-value">${ta.priceAction?.positionSignal ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Momentum</span>
+            <span class="analysis-value">${ta.momentum?.priceMomentum ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Volatility Risk</span>
+            <span class="analysis-value">${ta.risk?.volatilityRisk ?? 'N/A'}</span>
+        </div>
         `;
     }
 
-    // Strategy calculation
-    const price = data.price;
-    const ma50 = data.fullData?.fiftyDayAverage || 0;
-    const ma200 = data.fullData?.twoHundredDayAverage || 0;
-    const high = data.dayHigh || price * 1.05;
-    const low = data.dayLow || price * 0.95;
 
-    let entry = price;
-    let tp1, tp2, sl, note;
+    if (data.tradingStrategy) {
+        const ts = data.tradingStrategy;
+        html += `
+        <div class="section-title">Trading Strategy</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Signal</span>
+            <span class="analysis-value">${ts.primarySignal ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Action</span>
+            <span class="analysis-value">${ts.action ?? 'HOLD'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Confidence</span>
+            <span class="analysis-value">${ts.confidence ?? 'MEDIUM'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Risk Level</span>
+            <span class="analysis-value">${ts.riskManagement?.riskLevel ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Time Frame</span>
+            <span class="analysis-value">${ts.timeFrame ?? 'N/A'}</span>
+        </div>
 
-    if (price > ma50 && price > ma200) {
-        note = "Momentum Bullish ✅";
-        entry = price;
-        tp1 = price * 1.05;
-        tp2 = high * 1.02;
-        sl = Math.min(ma50, low, entry * 0.97);
-    } else if (price > ma200 && price < ma50) {
-        note = "Sideways ⚠️ - be cautious entering";
-        entry = price * 0.99;
-        tp1 = price * 1.03;
-        tp2 = high;
-        sl = Math.min(ma200 * 0.98, entry * 0.97);
-    } else {
-        note = "Bearish ❌ - high risk";
-        entry = price;
-        tp1 = price * 1.02;
-        tp2 = price * 1.04;
-        sl = entry * 0.97;
+        <div class="analysis-subsection-title">Entry Strategy</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Recommendation</span>
+            <span class="analysis-value">${ts.entryStrategy?.recommendation ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Ideal Entry</span>
+            <span class="analysis-value">${typeof ts.entryStrategy?.idealEntry === 'number' ? formatCurrency(ts.entryStrategy.idealEntry) : ts.entryStrategy?.idealEntry ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Aggressive Entry</span>
+            <span class="analysis-value">${typeof ts.entryStrategy?.aggressiveEntry === 'number' ? formatCurrency(ts.entryStrategy.aggressiveEntry) : ts.entryStrategy?.aggressiveEntry ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Entry Condition</span>
+            <span class="analysis-value">${ts.entryStrategy?.entryCondition ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Confirmation</span>
+            <span class="analysis-value">${ts.entryStrategy?.confirmation ?? 'N/A'}</span>
+        </div>
+
+        <div class="analysis-subsection-title">Exit Strategy</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Take Profit 1</span>
+            <span class="analysis-value">${typeof ts.exitStrategy?.takeProfit1 === 'number' ? formatCurrency(ts.exitStrategy.takeProfit1) : ts.exitStrategy?.takeProfit1 ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Take Profit 2</span>
+            <span class="analysis-value">${typeof ts.exitStrategy?.takeProfit2 === 'number' ? formatCurrency(ts.exitStrategy.takeProfit2) : ts.exitStrategy?.takeProfit2 ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Stop Loss</span>
+            <span class="analysis-value">${typeof ts.exitStrategy?.stopLoss === 'number' ? formatCurrency(ts.exitStrategy.stopLoss) : ts.exitStrategy?.stopLoss ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Trailing Stop</span>
+            <span class="analysis-value">${ts.exitStrategy?.trailingStop ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Risk Reward Ratio</span>
+            <span class="analysis-value">${ts.exitStrategy?.riskRewardRatio ?? 'N/A'}</span>
+        </div>
+
+        <div class="analysis-subsection-title">Risk Management</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Position Size</span>
+            <span class="analysis-value">${ts.riskManagement?.positionSize ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Max Loss</span>
+            <span class="analysis-value">${ts.riskManagement?.maxLoss ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Volatility Alert</span>
+            <span class="analysis-value">${ts.riskManagement?.volatilityAlert ?? 'N/A'}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Recommendation</span>
+            <span class="analysis-value">${ts.riskManagement?.recommendation ?? 'N/A'}</span>
+        </div>
+
+        <div class="analysis-subsection-title">Key Levels</div>
+        <div class="analysis-row">
+            <span class="analysis-label">Immediate Resistance</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.immediateResistance ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Immediate Support</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.immediateSupport ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Resistance 1</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.resistance1 ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Resistance 2</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.resistance2 ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Support 1</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.support1 ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Support 2</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.support2 ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Psychological Resistance</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.psychologicalResistance ?? 0)}</span>
+        </div>
+        <div class="analysis-row">
+            <span class="analysis-label">Psychological Support</span>
+            <span class="analysis-value">${formatCurrency(ts.keyLevels?.psychologicalSupport ?? 0)}</span>
+        </div>
+        `;
     }
 
-    if (sl >= entry) {
-        sl = entry * 0.97;
-    }
 
-    const rr = ((tp1 - entry) / (entry - sl)).toFixed(2);
-
+    // Last update info
     html += `
-        </div>
-
-        <div class="strategy-section">
-            <div class="strategy-title">Trading Strategy:</div>
-            <div class="analysis-row">
-                <span class="analysis-label">Signal</span>
-                <span class="analysis-value">${note}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Entry</span>
-                <span class="analysis-value">${formatCurrency(entry)}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Take Profit</span>
-                <span class="analysis-value">${formatCurrency(tp1)} (TP1), ${formatCurrency(tp2)} (TP2)</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Stop Loss</span>
-                <span class="analysis-value">${formatCurrency(sl)}</span>
-            </div>
-            <div class="analysis-row">
-                <span class="analysis-label">Risk/Reward</span>
-                <span class="analysis-value">${rr !== undefined && rr !== null ? rr : 'N/A'}</span>
-            </div>
-        </div>
-
         <div class="analysis-row">
             <span class="analysis-label">Last Update</span>
             <span class="analysis-value">${new Date(data.lastUpdated).toLocaleString('en-US')}</span>
         </div>
-    `;
+    </div>`;
 
     document.getElementById('analisa-results').innerHTML = html;
 }
