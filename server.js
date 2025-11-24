@@ -33,17 +33,40 @@ const runAnalisaSaham = require('./logic/AnalyticSpesific');
 // API Endpoints
 app.get('/api/screening', async (req, res) => {
   try {
+    console.log('Running screening...');
     const result = await runScreeningOnce();
-    if (result.error) {
-      return res.json(result);
+
+    if (!result) {
+      console.error('Screening returned no result');
+      return res.status(500).json({ error: 'Screening returned no result' });
     }
-    res.json({
-      top10: result.top10,
-      top5: result.top5,
-      total: result.total
-    });
+
+    if (result.error) {
+      console.error('Screening reported error:', result.error, result);
+      // Return structured error with optional debug details to help troubleshooting
+      return res.status(500).json({ error: result.error, details: result.message || null, debug: { marketSummary: result.marketSummary, signals: Array.isArray(result.allSignals) ? result.allSignals.length : undefined } });
+    }
+
+    // Normalize the screening result to the front-end expected shape.
+    // The screening module returns keys like `allCandidates`, `strongGapUp`, `potentialGapUp`, and `marketSummary`.
+    const allCandidates = result.allCandidates || result.allSignals || [];
+    const strong = result.strongGapUp || [];
+    const potential = result.potentialGapUp || [];
+
+    // Build top10 and top5 from available candidate lists (falling back sensibly)
+    const top10 = result.top10 || allCandidates.slice(0, 10) || strong.concat(potential).slice(0, 10);
+    const top5 = result.top5 || allCandidates.slice(0, 5) || strong.slice(0, 5);
+
+    // Determine total from marketSummary or fallback to candidate length
+    const total = result.total || result.marketSummary?.gapUpCandidates || allCandidates.length || 0;
+
+    // Include a small debug summary to help frontend diagnostics
+    const debug = { marketSummary: result.marketSummary, returnedSignals: top10.length };
+
+    res.json({ top10, top5, total, debug });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Unhandled error in /api/screening:', error);
+    res.status(500).json({ error: 'Screening failed', details: error.message, stack: error.stack });
   }
 });
 

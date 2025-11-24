@@ -33,13 +33,23 @@ function formatCurrency(num) {
 }
 
 
-function formatTime(minutes) {
-    if (minutes < 60) {
-        return `${minutes}m`;
+function formatTime(value) {
+    if (typeof value === 'string') {
+        // Handle custom time strings from API like OPEN_30MIN, OPEN_5MIN, PRE_OPEN
+        if (value === 'PRE_OPEN') return 'Pre-Open';
+        const match = value.match(/OPEN_(\d+)MIN/);
+        if (match) return `Open +${match[1]}m`;
+        return value; // fallback to raw string
+    } else if (typeof value === 'number') {
+        if (value < 60) {
+            return `${value}m`;
+        } else {
+            const hours = Math.floor(value / 60);
+            const remainingMinutes = value % 60;
+            return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+        }
     } else {
-        const hours = Math.floor(minutes / 60);
-        const remainingMinutes = minutes % 60;
-        return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+        return 'N/A';
     }
 }
 
@@ -92,18 +102,31 @@ async function loadScreening() {
         updateProgress(75);
 
         const response = await fetch('/api/screening');
-        const data = await response.json();
+            const data = await response.json();
 
-        updateProgress(100);
+            updateProgress(100);
 
-        if (data.error) {
-            showError('screening-results', data.error);
-            return;
-        }
+            if (data.error) {
+                const detail = data.details ? `: ${data.details}` : '';
+                showError('screening-results', `Server error${detail}`);
+                console.error('Screening API returned error:', data);
+                // Optionally show debug info in console for deeper inspection
+                if (data.debug) console.debug('Screening debug:', data.debug);
+                return;
+            }
 
-        displayScreeningResults(data.top10, data.top5);
+            // Defensive checks in case API shape changed
+            if (!Array.isArray(data.top10) || !Array.isArray(data.top5)) {
+                console.warn('Unexpected screening response shape:', data);
+                showError('screening-results', 'Unexpected response shape from server — check console for details');
+                console.debug('Full screening response:', data);
+                return;
+            }
+
+            displayScreeningResults(data.top10, data.top5);
     } catch (error) {
-        showError('screening-results', 'Failed to load screening data');
+        showError('screening-results', `Failed to load screening data: ${error.message}`);
+        console.error('Failed to fetch /api/screening:', error);
     }
 }
 
@@ -143,7 +166,7 @@ function displayScreeningResults(top10, top5) {
                 <td><strong>${stock.symbol.replace('.JK', '')}</strong></td>
                 <td>${stock.name}</td>
                 <td>${formatCurrency(stock.price)}</td>
-                <td class="${changeClass}">${changeSymbol}${stock.changePercent.toFixed(2)}%</td>
+        <td class="${changeClass}">${changeSymbol}${(stock.changePercent !== undefined && stock.changePercent !== null) ? stock.changePercent.toFixed(2) : 'N/A'}%</td>
                 <td>${stock.volume.toLocaleString('en-US')}</td>
                 <td>${formatCurrency(Number(stock.tp))}</td>
                 <td>${formatCurrency(Number(stock.sl))}</td>
@@ -198,7 +221,7 @@ function displayScreeningResults(top10, top5) {
                 </div>
                 <div class="analysis-row">
                 <span class="analysis-label">💵 Pnl</span>
-                    <span class="analysis-value">${formatCurrency(stock.potentialProfit)} (${stock.profitPercent.toFixed(2)}%)</span>
+                    <span class="analysis-value">${formatCurrency(stock.potentialGain)} ${(stock.profitPercent !== undefined && stock.profitPercent !== null) ? `(${stock.profitPercent.toFixed(2)}%)` : ''}</span>
                 </div>
                 <div class="analysis-row">
                     <span class="analysis-label">📝 </span>
@@ -263,9 +286,9 @@ function displayAnalisaResults(data) {
                 <span class="analysis-label">Price</span>
                 <span class="analysis-value">${formatCurrency(data.price)}</span>
             </div>
-            <div class="analysis-row">
+    <div class="analysis-row">
                 <span class="analysis-label">Change</span>
-                <span class="analysis-value ${changeClass}">${changeSymbol}${data.change} (${data.changePercent.toFixed(2)}%)</span>
+                <span class="analysis-value ${changeClass}">${changeSymbol}${data.change} ${(data.changePercent !== undefined && data.changePercent !== null) ? `(${data.changePercent.toFixed(2)}%)` : '(N/A)'}</span>
             </div>
             <div class="analysis-row">
                 <span class="analysis-label">Volume</span>
@@ -373,7 +396,7 @@ function displayAnalisaResults(data) {
             </div>
             <div class="analysis-row">
                 <span class="analysis-label">Risk/Reward</span>
-                <span class="analysis-value">${rr}</span>
+                <span class="analysis-value">${rr !== undefined && rr !== null ? rr : 'N/A'}</span>
             </div>
         </div>
 
